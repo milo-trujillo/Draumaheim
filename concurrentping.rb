@@ -1,5 +1,12 @@
 #!/usr/bin/env ruby
 
+=begin
+This is a simple script for testing network connectivity
+that attempts to ping every node in the cluster and reports on
+success or failure. It's mostly an excuse to test concurrency
+and networking in Ruby.
+=end
+
 require 'socket'
 require 'timeout'
 require 'thread'
@@ -64,7 +71,3 @@ loop {
 	end	
 }
 
-=begin
-This is a multiline
-comment
-=end
