@@ -15,6 +15,7 @@ Nodesubnet = "192.168.0."
 Nodestart = 201
 Nodeend = 207
 
+# From stackoverflow.com/questions/7519159/
 def pingecho(host, timeout=5, service="echo")
 	begin
 		timeout(timeout) do
@@ -28,6 +29,14 @@ def pingecho(host, timeout=5, service="echo")
 	end
 	return true
 end
+
+# From stackoverflow.com/questions/2070010/
+def colorize(text, color_code)
+	"\e[#{color_code}m#{text}\e[0m"
+end
+
+def red(text); colorize(text, 31); end
+def green(text); colorize(text, 32); end
 
 # Populate hash table with every node's IP address
 nodelist = Hash.new
@@ -62,9 +71,9 @@ loop {
 	if( completedpings == nodelist.size )
 		nodelist.keys.each do |node|
 			if( nodelist[node] == true )
-				puts (node + " is online")
+				puts (node + " is " + green("online"))
 			else
-				puts (node + " is offline")
+				puts (node + " is " + red("offline"))
 			end
 		end
 		exit
