@@ -12,7 +12,9 @@ Forwardhosts = 2 # Number of additional nodes to forward to
 TTL = 2 # Number of hops a message can make before discarding
 Pause = 1 # Number of seconds to wait before relaying a message
 
-screenlock = nil
+Thread.abort_on_exception = true
+
+screenlock = Mutex.new
 
 def forwardMessage(ttl = TTL, msg)
 	for x in ( 1 .. Forwardhosts )
@@ -53,7 +55,6 @@ def listen()
 end
 
 if __FILE__ == $0
-	screenlock = Mutex.new
 	Thread.start() do listen end
 	loop {
 		msg = gets
