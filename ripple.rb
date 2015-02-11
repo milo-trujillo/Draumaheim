@@ -9,7 +9,7 @@ Nodestart = 201
 Nodeend = 207
 Port = 3000
 Forwardhosts = 2 # Number of additional nodes to forward to
-TTL = 2 # Number of hops a message can make before discarding
+TTL = 5 # Number of hops a message can make before discarding
 Pause = 1 # Number of seconds to wait before relaying a message
 
 def forwardMessage(ttl = TTL, msg)
