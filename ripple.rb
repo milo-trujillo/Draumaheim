@@ -9,15 +9,15 @@ Nodestart = 201
 Nodeend = 207
 Port = 3000
 Forwardhosts = 2 # Number of additional nodes to forward to
-TTL = 5 # Number of hops a message can make before discarding
+TTL = 2 # Number of hops a message can make before discarding
 Pause = 1 # Number of seconds to wait before relaying a message
 
+screenlock = Mutex.new
+
 def forwardMessage(ttl = TTL, msg)
-	puts "Forwarding msg: \"" + msg + "\" with TTL " + ttl.to_s
 	for x in ( 1 .. Forwardhosts )
 		Thread.start() do
 			target = Nodestart + Random.rand(Nodeend - Nodestart + 1)
-			puts "Forwarding to " + Nodesubnet + target.to_s
 			s = TCPSocket.open(Nodesubnet + target.to_s, Port)
 			s.puts(ttl.to_s + " " + msg.to_s)
 			s.close
@@ -33,12 +33,16 @@ def listen()
 			client.close
 			capture = /^(\d+) (.*)/.match(line)
 			if( capture.size != 3 ) # First match is the entire result
-				puts "Error reading message, received:"
-				puts capture.captures
+				screenlock.synchronize {
+					puts "Error reading message, received:"
+					puts capture.captures
+				}
 				return
 			end
 			ttl, msg = capture.captures
-			puts "Received message: [TTL " + ttl.to_s + "] " + msg
+			screenlock.synchronize {
+				puts "Received message: [TTL " + ttl.to_s + "] " + msg
+			}
 			if( ttl.to_i > TTL || ttl.to_i == 0 )
 				return
 			end
