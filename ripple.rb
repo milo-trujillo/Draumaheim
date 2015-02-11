@@ -1,5 +1,10 @@
 #!/usr/bin/env ruby
 
+=begin
+This is an example of distributed message passing where messages "ripple"
+out between nodes in a semi-organic patern.
+=end
+
 require 'socket'
 require 'thread'
 
