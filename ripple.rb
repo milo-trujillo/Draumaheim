@@ -39,10 +39,10 @@ def listen()
 			end
 			ttl, msg = capture.captures
 			puts "Received message: [TTL " + ttl.to_s + "] " + msg
-			if( ttl > TTL || ttl == 0 )
+			if( ttl.to_i > TTL || ttl.to_i == 0 )
 				return
 			end
-			sleep(Pause.to_i)
+			sleep(Pause)
 			forwardMessage(ttl.to_i - 1, msg)
 		end
 	}	
