@@ -42,7 +42,7 @@ def listen()
 			if( ttl > TTL || ttl == 0 )
 				return
 			end
-			sleep(Pause)
+			sleep(Pause.to_i)
 			forwardMessage(ttl.to_i - 1, msg)
 		end
 	}	
