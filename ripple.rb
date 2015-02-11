@@ -39,14 +39,14 @@ def listen()
 					puts "Error reading message, received:"
 					puts capture.captures
 				}
-				exit
+				Thread.current.exit
 			end
 			ttl, msg = capture.captures
 			$screenlock.synchronize {
 				puts "Received message: [TTL " + ttl.to_s + "] " + msg
 			}
 			if( ttl.to_i > TTL || ttl.to_i == 0 )
-				exit
+				Thread.current.exit
 			end
 			sleep(Pause)
 			forwardMessage(ttl.to_i - 1, msg)
