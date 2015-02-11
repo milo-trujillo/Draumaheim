@@ -19,7 +19,7 @@ def forwardMessage(ttl = TTL, msg)
 			target = Nodestart + Random.rand(Nodeend - Nodestart + 1)
 			puts "Forwarding to " + Nodesubnet + target.to_s
 			s = TCPSocket.open(Nodesubnet + target.to_s, Port)
-			s.puts(ttl + " " + msg)
+			s.puts(ttl.to_s + " " + msg.to_s)
 			s.close
 		end
 	end
