@@ -14,7 +14,7 @@ Pause = 1 # Number of seconds to wait before relaying a message
 
 Thread.abort_on_exception = true
 
-screenlock = Mutex.new
+$screenlock = Mutex.new
 
 def forwardMessage(ttl = TTL, msg)
 	for x in ( 1 .. Forwardhosts )
@@ -35,14 +35,14 @@ def listen()
 			client.close
 			capture = /^(\d+) (.*)/.match(line)
 			if( capture.size != 3 ) # First match is the entire result
-				screenlock.synchronize {
+				$screenlock.synchronize {
 					puts "Error reading message, received:"
 					puts capture.captures
 				}
 				return
 			end
 			ttl, msg = capture.captures
-			screenlock.synchronize {
+			$screenlock.synchronize {
 				puts "Received message: [TTL " + ttl.to_s + "] " + msg
 			}
 			if( ttl.to_i > TTL || ttl.to_i == 0 )
