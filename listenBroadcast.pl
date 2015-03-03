@@ -16,20 +16,19 @@ use strict;
 
 my $port = 33333;
 
-my ($sock);
-my $data;
-
-$sock=IO::Socket::INET->new(Proto => 'udp',
-LocalPort => $port) or die "Can't bind: $@\n";
+my $sock=IO::Socket::INET->new(Proto => 'udp', LocalPort => $port) or die "Can't bind: $@\n";
 
 print scalar localtime().": Awaiting data...\n";
+
+my $data;
 while($sock->recv($data, 1024)) 
 {
 	my ($port, $ipaddr) = sockaddr_in($sock->peername);
-	my ($peerhost)=gethostbyaddr($ipaddr, AF_INET);
+	#my ($peerhost)=gethostbyaddr($ipaddr, AF_INET);
 	my ($peerip) = inet_ntoa($ipaddr);
+	chomp($data);
 
-	print scalar localtime().": Rcvd $data from $peerhost $peerip\n";
+	print scalar(localtime().": Rcvd $data from $peerip\n");
 }
 
 print "Done\n";
