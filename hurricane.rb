@@ -46,9 +46,29 @@ def receiveBroadcasts()
 	}
 end
 
+def usage()
+	puts ("USAGE: " + $0 + " <checksum|seed|download> <datafile> <stormfile>")
+end
+
 if __FILE__ == $0
-	thr = Thread.new() { receiveBroadcasts() }
-	sleep 2
-	announce()
-	thr.join # Pause forever
+	if( ARGV.length != 3 )
+		usage()
+		exit()
+	end
+	command = ARGV[0]
+	dataFileName = ARGV[1]
+	stormFileName = ARGV[2]
+	case command
+		when "checksum"
+			thr = Thread.new() { receiveBroadcasts() }
+			sleep 2
+			announce()
+			thr.join # Pause forever
+		when "seed"
+			puts "Seeding not yet implemented"
+		when "download"
+			puts "downloading not yet implemeneted"
+		else
+			usage()
+	end
 end
