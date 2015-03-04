@@ -47,7 +47,8 @@ def receiveBroadcasts()
 end
 
 if __FILE__ == $0
-	Thread.start() do receiveBroadcasts() end
+	thr = Thread.new() { receiveBroadcasts() }
 	sleep 2
 	announce()
+	thr.join # Pause forever
 end
