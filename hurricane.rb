@@ -1,19 +1,27 @@
 #!/usr/bin/env ruby
 
 =begin
-Early exploration into group messaging
+A simple take on torrenting.
+It splits files into 10K chunks, checksums each one, and can offer or request
+chunks by checksum over the network.
 =end
 
 require 'thread'
 require 'socket'
 require 'digest/sha2' # Defaults to size '256', supports any sized key
 
-Thread.abort_on_exception = true # Background threads will *not* die silently
-
+#
+# Global constants
+#
 Broadcastport = 33333
 Broadcastaddr = ['192.168.0.255', Broadcastport]
 Broadcastsizecap = 1024 # Maximum size of broadcast datagram we'll accept
+Chunksize = 10_000 # Chunk size for all files is 10K
 
+#
+# Other global state variables
+#
+Thread.abort_on_exception = true # Background threads will *not* die silently
 $screenlock = Mutex.new
 
 def announce()
@@ -46,6 +54,30 @@ def receiveBroadcasts()
 	}
 end
 
+def checksumChunk(chunk)
+	digest = Digest::SHA2.new << chunk
+	return digest.to_s
+end
+
+def genChecksum(dataFilename, stormFilename)
+	if( ! File.file?(dataFilename) )
+		puts "Error: Data file " + dataFilename + " does not exist!"
+		exit 1
+	end
+	if( File.file?(stormFilename) )
+		puts "Error: Storm file " + stormFilename + " already exists!"
+		exit 1
+	end
+	dataFile = File.open(dataFilename, "r")
+	stormFile = File.open(stormFilename, "w")
+	until dataFile.eof?
+		buffer = dataFile.read(Chunksize)
+		stormFile.puts checksumChunk(buffer)
+	end
+	dataFile.close()
+	stormFile.close()
+end
+
 def usage()
 	puts ("USAGE: " + $0 + " <checksum|seed|download> <datafile> <stormfile>")
 end
@@ -56,14 +88,15 @@ if __FILE__ == $0
 		exit()
 	end
 	command = ARGV[0]
-	dataFileName = ARGV[1]
-	stormFileName = ARGV[2]
+	dataFilename = ARGV[1]
+	stormFilename = ARGV[2]
 	case command
 		when "checksum"
-			thr = Thread.new() { receiveBroadcasts() }
-			sleep 2
-			announce()
-			thr.join # Pause forever
+			genChecksum(dataFilename, stormFilename)
+			#thr = Thread.new() { receiveBroadcasts() }
+			#sleep 2
+			#announce()
+			#thr.join # Pause forever
 		when "seed"
 			puts "Seeding not yet implemented"
 		when "download"
