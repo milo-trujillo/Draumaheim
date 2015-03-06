@@ -18,17 +18,26 @@ Broadcastaddr = ['192.168.0.255', Broadcastport]
 Broadcastsizecap = 1024 # Maximum size of broadcast datagram we'll accept
 Chunksize = 10_000 # Chunk size for all files is 10K
 
+# These are for tracking the status of individual file chunks
+Incomplete = 0
+Processing = 1
+Completed  = 2
+
+# How long to pause before repeating announcements to the network
+Announcewait = 30
+
 #
 # Other global state variables
 #
 Thread.abort_on_exception = true # Background threads will *not* die silently
 $screenlock = Mutex.new
+$hashlock = Mutex.new
+$filelock = Mutex.new
 
 def announce()
 	localhostname = Socket.gethostname() # Get current node name
 	digest = Digest::SHA2.new << localhostname
 	announce = "Announce " + localhostname + " => " + digest.to_s()
-
 	broadcast = UDPSocket.new
 	broadcast.setsockopt(Socket::SOL_SOCKET, Socket::SO_BROADCAST, true)
 	broadcast.send(announce, 0, Broadcastaddr[0], Broadcastaddr[1])
@@ -78,6 +87,53 @@ def genChecksum(dataFilename, stormFilename)
 	stormFile.close()
 end
 
+# This will later be responsible for requesting each chunk from other seeds
+def requestChunk(number, checksums, statuses)
+	$hashlock.synchronize {
+		# First we need to lock this chunk so noone else tries to grab it
+		statuses[number] = Processing
+	}
+	displayMessage("Downloading chunk #" + number.to_s)
+end
+
+# Here we basically read in all of the checksums we'll be interested in
+# and then while we're not done downloading we kick off a thread to get each chunk
+def beginDownload(dataFilename, stormFilename)
+	checksums = Array.new
+	statuses  = Array.new
+	if( File.file?(dataFilename) )
+		puts "Error: Data file " + dataFilename + " already exists!"
+		exit 1
+	end
+	if( ! File.file?(stormFilename) )
+		puts "Error: Storm file " + stormFilename + " does not exist!"
+		exit 1
+	end
+	dataFile = File.open(dataFilename, "w")
+	stormFile = File.open(stormFilename, "r")
+	until stormFile.eof?
+		checksum = stormFile.readline.chomp
+		checksums.push(checksum)
+		statuses.push(Incomplete)
+	end
+	done = false
+	while( ! done )
+		$hashlock.synchronize {
+			done = true
+			for number in 0 .. (checksums.size - 1) do
+				if( statuses[number] == Incomplete )
+					done = false
+					Thread.new() { requestChunk(number, checksums, statuses) }
+					sleep 0.2 
+					# If we don't sleep then "number" is changed before the
+					# thread can be created. Real obnoxious bug.
+				end				
+			end
+		}
+		sleep Announcewait
+	end
+end
+
 def usage()
 	puts ("USAGE: " + $0 + " <checksum|seed|download> <datafile> <stormfile>")
 end
@@ -93,15 +149,15 @@ if __FILE__ == $0
 	case command
 		when "checksum"
 			genChecksum(dataFilename, stormFilename)
-			#thr = Thread.new() { receiveBroadcasts() }
-			#sleep 2
-			#announce()
-			#thr.join # Pause forever
 		when "seed"
 			puts "Seeding not yet implemented"
 		when "download"
-			puts "downloading not yet implemeneted"
+			beginDownload(dataFilename, stormFilename)
 		else
 			usage()
 	end
+	#thr = Thread.new() { receiveBroadcasts() }
+	#sleep 2
+	#announce()
+	#thr.join # Pause forever
 end
