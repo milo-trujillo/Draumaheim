@@ -16,7 +16,7 @@ require 'digest/sha2' # Defaults to size '256', supports any sized key
 Broadcastport = 33333
 Broadcastaddr = ['192.168.0.255', Broadcastport]
 Broadcastsizecap = 1024 # Maximum size of broadcast datagram we'll accept
-Chunksize = 10_000 # Chunk size for all files is 10K
+Chunksize = 50_000 # Chunk size for all files is 50K
 
 # These are for tracking the status of individual file chunks
 Incomplete = 0
