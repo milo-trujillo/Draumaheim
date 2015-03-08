@@ -2,11 +2,12 @@
 
 =begin
 A simple take on torrenting.
-It splits files into 10K chunks, checksums each one, and can offer or request
+It splits files into 50K chunks, checksums each one, and can offer or request
 chunks by checksum over the network.
 =end
 
 require 'thread'
+require 'timeout'
 require 'socket'
 require 'digest/sha2' # Defaults to size '256', supports any sized key
 
@@ -17,6 +18,7 @@ Broadcastport = 33333
 Broadcastaddr = ['192.168.0.255', Broadcastport]
 Broadcastsizecap = 1024 # Maximum size of broadcast datagram we'll accept
 Chunksize = 50_000 # Chunk size for all files is 50K
+Announcetimeout = 10 # Ten seconds of no response before we drop it
 
 # These are for tracking the status of individual file chunks
 Incomplete = 0
@@ -30,17 +32,15 @@ Announcewait = 30
 # Other global state variables
 #
 Thread.abort_on_exception = true # Background threads will *not* die silently
-$screenlock = Mutex.new
-$hashlock = Mutex.new
-$filelock = Mutex.new
+$screenlock = Mutex.new   # Lock for printing to screen
+$hashlock = Mutex.new     # Lock for accessing checksum / status lists
+$filelock = Mutex.new     # Lock for writing to datafile
+$announcelock = Mutex.new # Lock for accessing broadcast list
 
-def announce()
-	localhostname = Socket.gethostname() # Get current node name
-	digest = Digest::SHA2.new << localhostname
-	announce = "Announce " + localhostname + " => " + digest.to_s()
+def announce(msg)
 	broadcast = UDPSocket.new
 	broadcast.setsockopt(Socket::SOL_SOCKET, Socket::SO_BROADCAST, true)
-	broadcast.send(announce, 0, Broadcastaddr[0], Broadcastaddr[1])
+	broadcast.send(msg.to_s, 0, Broadcastaddr[0], Broadcastaddr[1])
 	broadcast.close
 end
 
@@ -87,13 +87,31 @@ def genChecksum(dataFilename, stormFilename)
 	stormFile.close()
 end
 
-# This will later be responsible for requesting each chunk from other seeds
+# This requests each chunk from other nodes and downloads if they respond
 def requestChunk(number, checksums, statuses)
+	checksum = ""
 	$hashlock.synchronize {
 		# First we need to lock this chunk so noone else tries to grab it
 		statuses[number] = Processing
+		checksum = checksums[number]
 	}
-	displayMessage("Downloading chunk #" + number.to_s)
+	announce("REQUEST " + checksum)
+	# Now until we time-out, see if anyone responds with the chunk
+	begin
+		timeout(Announcetimeout) do
+		loop {
+			sleep 2
+			$announcelock.synchronize {
+				# Read responses we've gotten, see if relevant
+			}
+			#displayMessage("Downloading chunk #" + number.to_s)
+		}
+	end
+	rescue Timeout::Error
+		$hashlock.synchronize {
+			statuses[number] = Incomplete
+		}
+	end
 end
 
 # Here we basically read in all of the checksums we'll be interested in
