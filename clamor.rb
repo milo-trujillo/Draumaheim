@@ -1,12 +1,16 @@
 #!/usr/bin/env ruby
 
+=begin
+An extremely simple IRC bot, serves mostly as an example to draw from later.
+=end
+
 require "cinch"
-require 'socket'
+require "socket"
   
 class Greeter
-	include Cinch::Plugin
+	include Cinch::Plugin # Inherit from generic irc bot
   
-	match /hello$/, method: :greet
+	match /hello$/, method: :greet # Call greet if !hello encountered
 	def greet(m)
 		m.reply "Hi there, my name is " + Socket.gethostname
 	end
